@@ -29,7 +29,7 @@ jobs:
       - name: Run a multi-line script
         run: |
           ls
-          clang Kernel64Patcher.c -o Kernel64Patcher -static
+          clang Kernel64Patcher.c -o Kernel64Patcher
           ls
           
           
