@@ -361,6 +361,12 @@ int main(int argc, char **argv) {
             printf("Kernel: Adding RootVPNotAuthenticatedAfterMounting patch...\n");
             get_RootVPNotAuthenticatedAfterMounting_patch(kernel_buf,kernel_len);
         }
+
+        if(strcmp(argv[i], "-k") == 0) {
+             printf("Kernel: adding ASPStorage::ASPIsReadOnly patch...\n");
+             IsReadOnly(kernel_buf, kernel_len);
+         }
+
     }
     
     /* Write patched kernel */
