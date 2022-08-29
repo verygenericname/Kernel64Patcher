@@ -11,6 +11,45 @@
 
 #define GET_OFFSET(kernel_len, x) (x - (uintptr_t) kernel_buf)
 
+int IsReadOnly(void* kernel_buf, size_t kernel_len) { // this is a scuffed fix, and its def not 100% the best but it works (kind of) -Luna
+
+    char* string = "ASPStorage::%%s - Ramdisk rooted. Returning readonly %%s\\n";
+    void* pos = memmem(kernel_buf, kernel_len, string, sizeof(string));
+    if(!pos) {
+        printf("%s: Could not find \"%s\" string\n",__FUNCTION__,string);
+        return -1;
+    }
+    printf("%s: Found \"%s\" string at %p\n",__FUNCTION__,string,GET_OFFSET(kernel_len,pos));
+
+    addr_t xref = xref64(kernel_buf,0,kernel_len,(addr_t)GET_OFFSET(kernel_buf, pos));
+    if(!xref) {
+        printf("%s: Could not find string xref\n",__FUNCTION__);
+        return -1;
+    }
+    printf("%s: Found string xref at %p\n",__FUNCTION__,(void*)xref);
+
+    addr_t ret_insn = step64(kernel_buf,xref, 0x100, INSN_RET);
+    if(!ret_insn) {
+        printf("%s: Could not find ret insn\n",__FUNCTION__);
+        return -1;
+    }
+    printf("%s: Found ret insn at %p\n",__FUNCTION__,(void*)ret_insn);
+
+    addr_t mov_insn = step64_back(kernel_buf, ret_insn, 0x100, INSN_MOV);
+    if(!mov_insn) {
+        printf("%s: Could not find mov insn\n",__FUNCTION__);
+        return -1;
+    }
+    printf("%s: Found mov insn at %p\n",__FUNCTION__,(void*)mov_insn);
+
+    *(uint32_t*)(kernel_buf+mov_insn) = 0xD2800000;
+    printf("%s: Patchomg mov insn to MOV X0, #0\n",__FUNCTION__);
+    // E0 03 13 AA
+
+    return 0;
+}
+
+
 // iOS 15 "%s: firmware validation failed %d\" @%s:%d SPU Firmware Validation Patch
 int get_SPUFirmwareValidation_patch(void *kernel_buf, size_t kernel_len) {
     printf("%s: Entering ...\n",__FUNCTION__);
